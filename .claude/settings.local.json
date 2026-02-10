@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python -c:*)",
+      "Bash(ping:*)",
+      "Bash(streamlit run:*)",
+      "Bash(taskkill:*)"
+    ]
+  }
+}

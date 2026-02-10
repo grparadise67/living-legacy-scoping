@@ -1,0 +1,29 @@
+{
+  "project_id": "20260210_091207",
+  "created_at": "2026-02-10T09:12:07.187445",
+  "legacy_type": "Growing Up",
+  "legacy_description": "The story of your childhood and formative years — the people, places, and moments that shaped who you became.",
+  "subject": {
+    "name": "Peter Pan",
+    "relationship": "This is my own story"
+  },
+  "scoping_details": {
+    "Which period would you like to focus on most?": "Early childhood (birth to age 10)",
+    "What aspects of growing up are most important to capture? (Select all that apply)": [
+      "Family life & home",
+      "Pivotal moments & turning points",
+      "Challenges & how I overcame them"
+    ],
+    "How important is it to paint a picture of the time and place?": "Very important — I want readers to feel like they're there"
+  },
+  "target_audience": [
+    "My Children",
+    "My Grandchildren"
+  ],
+  "audience_notes": "Make is accessible for ages teen and up",
+  "delivery_formats": [
+    "Written Book / Memoir"
+  ],
+  "timeline": "Within the next month",
+  "additional_notes": "I'm excited to start"
+}

@@ -1,0 +1,29 @@
+{
+  "project_id": "20260210_085201",
+  "created_at": "2026-02-10T08:52:01.598332",
+  "legacy_type": "Professional Life: My Career",
+  "legacy_description": "Your professional journey — the jobs, mentors, breakthroughs, and lessons from your working life.",
+  "subject": {
+    "name": "Alisa Paradise",
+    "relationship": "This is my own story"
+  },
+  "scoping_details": {
+    "What part of your career would you like to focus on?": "My entire career arc, start to finish",
+    "Which professional themes matter most? (Select all that apply)": [
+      "How I got started & early career",
+      "Major accomplishments & proud moments",
+      "Leadership philosophy & management style"
+    ],
+    "How technical or detailed should the career story be?": "Keep it accessible — anyone should be able to enjoy it"
+  },
+  "target_audience": [
+    "My Children",
+    "Extended Family"
+  ],
+  "audience_notes": "Audience is family",
+  "delivery_formats": [
+    "Not sure yet"
+  ],
+  "timeline": "Within the next month",
+  "additional_notes": "I have some photos from my career I'd like you to use"
+}
