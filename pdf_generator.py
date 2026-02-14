@@ -149,6 +149,37 @@ def generate_interview_guide_pdf(
 
     pdf.ln(4)
 
+    # ── Life Timeline (if events exist) ─────────────────────────────
+    timeline_events = project_data.get("timeline_events", [])
+    if timeline_events:
+        pdf.add_page()
+        _section_heading(pdf, "Life Timeline")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(80, 80, 80)
+        pdf.set_x(15)
+        pdf.multi_cell(0, 6, _safe(
+            "Key life events to guide the interview. "
+            "Use these as reference points to anchor memories and stories."
+        ))
+        pdf.ln(4)
+        for ev in timeline_events:
+            # Year in bold
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_text_color(46, 64, 87)
+            pdf.cell(18, 6, str(ev["year"]))
+            # Title
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_text_color(74, 124, 143)
+            title_text = _safe(ev["title"])
+            pdf.cell(0, 6, title_text, new_x="LMARGIN", new_y="NEXT")
+            # Description (if any)
+            if ev.get("description"):
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(100, 100, 100)
+                pdf.set_x(28)
+                pdf.multi_cell(0, 5, _safe(ev["description"]))
+            pdf.ln(3)
+
     # ── Priority legend (if priorities are provided) ────────────────────
     if priority_map:
         _section_heading(pdf, "Priority Legend")
@@ -342,6 +373,18 @@ def generate_scope_summary_pdf(project_data: dict) -> bytes:
     notes = project_data.get("additional_notes", "")
     if notes:
         _field("Additional Notes:", notes)
+
+    # ── Key Life Events ──────────────────────────────────────────────
+    timeline_events = project_data.get("timeline_events", [])
+    if timeline_events:
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(74, 124, 143)
+        pdf.cell(0, 7, "Key Life Events", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(1)
+        for ev in timeline_events:
+            desc = f" -- {_safe(ev['description'])}" if ev.get("description") else ""
+            _field(f"{ev['year']}:", f"{_safe(ev['title'])}{desc}")
 
     # ── Footer accent ────────────────────────────────────────────────
     pdf.ln(4)
