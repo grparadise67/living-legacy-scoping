@@ -99,6 +99,8 @@ def init_state():
         "subject_relationship": "",
         "timeline": "",
         "additional_notes": "",
+        # Timeline events
+        "timeline_events": [],
         # Question bank state
         "generated_questions": OrderedDict(),
         "priority_map": {},
@@ -111,7 +113,7 @@ def init_state():
 
 init_state()
 
-TOTAL_STEPS = 6
+TOTAL_STEPS = 7
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +145,10 @@ def build_project_data() -> dict:
         "delivery_formats": st.session_state.delivery_formats,
         "timeline": st.session_state.timeline,
         "additional_notes": st.session_state.additional_notes,
+        "timeline_events": sorted(
+            st.session_state.timeline_events,
+            key=lambda e: e["year"],
+        ),
     }
 
 
@@ -202,6 +208,14 @@ def build_text_summary(data: dict) -> str:
         lines.append(f"  {data['additional_notes']}")
         lines.append("")
 
+    timeline_events = data.get("timeline_events", [])
+    if timeline_events:
+        lines.append("KEY LIFE EVENTS")
+        for ev in timeline_events:
+            desc = f" — {ev['description']}" if ev.get("description") else ""
+            lines.append(f"  {ev['year']}: {ev['title']}{desc}")
+        lines.append("")
+
     lines.append("=" * 60)
     lines.append("Thank you for preserving what matters most.")
     lines.append("=" * 60)
@@ -219,6 +233,7 @@ def show_progress():
         "Scope",
         "Audience",
         "Format",
+        "Timeline",
         "Review",
         "Questions",
     ]
@@ -455,10 +470,131 @@ elif st.session_state.step == 4:
 
 
 # =====================================================================
-# STEP 5 — Summary / Confirmation
+# STEP 5 — Timeline Mapper
 # =====================================================================
 elif st.session_state.step == 5:
-    st.markdown('<div class="step-header"><h3>Step 5: Your Living Legacy Project Summary</h3></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="step-header">'
+        "<h3>Step 5: Map Key Life Events</h3>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    st.write(
+        "Plot the key moments in "
+        + (st.session_state.subject_name or "your subject")
+        + "'s life. This timeline will guide your interviews and help "
+        "capture the full arc of their story."
+    )
+
+    # ── Add event form ──────────────────────────────────────────────
+    st.markdown("#### Add a Life Event")
+    ev_col1, ev_col2 = st.columns([1, 3])
+    with ev_col1:
+        event_year = st.number_input(
+            "Year",
+            min_value=1900,
+            max_value=2030,
+            value=1970,
+            step=1,
+            key="event_year_input",
+        )
+    with ev_col2:
+        event_title = st.text_input(
+            "Event title",
+            key="event_title_input",
+            placeholder="e.g., Born in Chicago, Graduated college, Married Sarah",
+        )
+    event_desc = st.text_input(
+        "Brief description (optional)",
+        key="event_desc_input",
+        placeholder="e.g., First in the family to earn a degree",
+    )
+
+    if st.button("➕ Add Event", key="add_event_btn"):
+        if event_title.strip():
+            st.session_state.timeline_events.append({
+                "year": int(event_year),
+                "title": event_title.strip(),
+                "description": event_desc.strip(),
+            })
+            st.rerun()
+        else:
+            st.error("Please enter an event title.")
+
+    # ── Current events list ─────────────────────────────────────────
+    events = sorted(st.session_state.timeline_events, key=lambda e: e["year"])
+
+    if events:
+        st.divider()
+        st.markdown(f"#### Life Events ({len(events)})")
+
+        for i, ev in enumerate(events):
+            ev_list_col1, ev_list_col2, ev_list_col3 = st.columns([1.5, 8, 1])
+            with ev_list_col1:
+                st.markdown(f"**{ev['year']}**")
+            with ev_list_col2:
+                desc_text = f" — {ev['description']}" if ev["description"] else ""
+                st.markdown(f"{ev['title']}{desc_text}")
+            with ev_list_col3:
+                if st.button("🗑️", key=f"del_ev_{i}", help="Remove this event"):
+                    st.session_state.timeline_events.remove(ev)
+                    st.rerun()
+
+        # ── Horizontal timeline visualization ───────────────────────
+        st.divider()
+        st.markdown("#### Your Timeline")
+
+        min_year = events[0]["year"]
+        max_year = events[-1]["year"]
+        year_span = max(max_year - min_year, 1)
+
+        # Build event markers as HTML
+        markers_html = ""
+        for ev in events:
+            pct = ((ev["year"] - min_year) / year_span) * 90 + 5  # 5%-95% range
+            safe_title = ev["title"].replace('"', "&quot;").replace("<", "&lt;")
+            markers_html += f"""
+            <div style="position:absolute; left:{pct:.1f}%; top:0; transform:translateX(-50%);
+                        text-align:center; width:100px;">
+                <div style="font-size:0.75rem; font-weight:bold; color:#2E4057;
+                            margin-bottom:4px;">{ev['year']}</div>
+                <div style="width:16px; height:16px; background:#4A7C8F; border-radius:50%;
+                            border:3px solid #2E4057; margin:0 auto;"></div>
+                <div style="font-size:0.7rem; color:#5C7A99; margin-top:4px;
+                            line-height:1.2; word-wrap:break-word;">{safe_title}</div>
+            </div>
+            """
+
+        timeline_html = f"""
+        <div style="position:relative; margin:2rem 0 4rem 0; padding:0 10px; min-height:100px;">
+            <div style="position:absolute; top:22px; left:3%; right:3%; height:4px;
+                        background:linear-gradient(90deg, #2E4057, #4A7C8F);
+                        border-radius:2px;"></div>
+            {markers_html}
+        </div>
+        """
+        st.markdown(timeline_html, unsafe_allow_html=True)
+    else:
+        st.info("No events added yet. Use the form above to start plotting key life moments.")
+
+    # ── Navigation ──────────────────────────────────────────────────
+    st.write("")
+    col_back, col_spacer, col_next = st.columns([2, 6, 2])
+    with col_back:
+        if st.button("← Back", use_container_width=True, key="step5_back"):
+            st.session_state.step = 4
+            st.rerun()
+    with col_next:
+        if st.button("Continue →", key="step5_next", use_container_width=True):
+            st.session_state.step = 6
+            st.rerun()
+
+
+# =====================================================================
+# STEP 6 — Summary / Confirmation
+# =====================================================================
+elif st.session_state.step == 6:
+    st.markdown('<div class="step-header"><h3>Step 6: Your Living Legacy Project Summary</h3></div>', unsafe_allow_html=True)
     st.write("Here's everything you've told us. Review the details and confirm when you're ready.")
 
     lt = st.session_state.legacy_type
@@ -499,6 +635,14 @@ elif st.session_state.step == 5:
     if st.session_state.additional_notes:
         st.write(f"**Additional notes:** {st.session_state.additional_notes}")
 
+    # --- Life events timeline ---
+    review_events = sorted(st.session_state.timeline_events, key=lambda e: e["year"])
+    if review_events:
+        st.markdown("#### Key Life Events")
+        for ev in review_events:
+            desc = f" — {ev['description']}" if ev.get("description") else ""
+            st.write(f"**{ev['year']}:** {ev['title']}{desc}")
+
     st.divider()
 
     # ── Generate Project Brief PDF ─────────────────────────────────
@@ -512,18 +656,18 @@ elif st.session_state.step == 5:
         data=brief_pdf_bytes,
         file_name=f"project_brief_{safe_brief_name}.pdf",
         mime="application/pdf",
-        key="step5_brief_pdf",
+        key="step6_brief_pdf",
     )
 
     st.divider()
 
     col_back, col_spacer, col_confirm = st.columns([2, 5, 3])
     with col_back:
-        if st.button("← Edit Answers", use_container_width=True, key="step5_back"):
-            st.session_state.step = 1
+        if st.button("← Edit Answers", use_container_width=True, key="step6_back"):
+            st.session_state.step = 5
             st.rerun()
     with col_confirm:
-        if st.button("Confirm → Build Interview Questions", type="primary", use_container_width=True, key="step5_confirm"):
+        if st.button("Confirm → Build Interview Questions", type="primary", use_container_width=True, key="step6_confirm"):
             # Save project files
             project_data = build_project_data()
             saved_path = save_project_json(project_data)
@@ -534,17 +678,17 @@ elif st.session_state.step == 5:
             st.session_state.generated_questions = generate_questions(project_data)
             st.session_state.priority_map = {}
             st.session_state.questions_generated = True
-            st.session_state.step = 6
+            st.session_state.step = 7
             st.rerun()
 
 
 # =====================================================================
-# STEP 6 — Question Bank: Review, Edit, Prioritize, Export
+# STEP 7 — Question Bank: Review, Edit, Prioritize, Export
 # =====================================================================
-elif st.session_state.step == 6:
+elif st.session_state.step == 7:
     st.markdown(
         '<div class="step-header">'
-        "<h3>Step 6: Your Personalized Interview Questions</h3>"
+        "<h3>Step 7: Your Personalized Interview Questions</h3>"
         "</div>",
         unsafe_allow_html=True,
     )
@@ -702,11 +846,11 @@ elif st.session_state.step == 6:
     # ── Navigation ──────────────────────────────────────────────────
     col_back6, col_spacer6, col_done6 = st.columns([2, 5, 3])
     with col_back6:
-        if st.button("← Back to Review", use_container_width=True, key="step6_back"):
-            st.session_state.step = 5
+        if st.button("← Back to Review", use_container_width=True, key="step7_back"):
+            st.session_state.step = 6
             st.rerun()
     with col_done6:
-        if st.button("🎉 Finish", type="primary", use_container_width=True, key="step6_done"):
+        if st.button("🎉 Finish", type="primary", use_container_width=True, key="step7_done"):
             st.balloons()
             st.success(
                 f"**Your Living Legacy project is complete!**\n\n"
