@@ -16,7 +16,7 @@ from legacy_data import (
     TIMELINE_OPTIONS,
 )
 from question_bank import generate_questions
-from pdf_generator import generate_interview_guide_pdf
+from pdf_generator import generate_interview_guide_pdf, generate_scope_summary_pdf
 
 # ---------------------------------------------------------------------------
 # Output directory for saved project files
@@ -498,6 +498,22 @@ elif st.session_state.step == 5:
     st.write(f"**Timeline:** {st.session_state.timeline}")
     if st.session_state.additional_notes:
         st.write(f"**Additional notes:** {st.session_state.additional_notes}")
+
+    st.divider()
+
+    # ── Generate Project Brief PDF ─────────────────────────────────
+    st.markdown("### 📋 Project Brief")
+    st.write("Download a professional one-page summary to share with family members or stakeholders.")
+    brief_data = build_project_data()
+    brief_pdf_bytes = generate_scope_summary_pdf(brief_data)
+    safe_brief_name = brief_data["subject"]["name"].replace(" ", "_")
+    st.download_button(
+        label="📄 Generate Project Brief (PDF)",
+        data=brief_pdf_bytes,
+        file_name=f"project_brief_{safe_brief_name}.pdf",
+        mime="application/pdf",
+        key="step5_brief_pdf",
+    )
 
     st.divider()
 

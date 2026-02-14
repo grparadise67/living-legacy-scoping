@@ -214,6 +214,154 @@ def generate_interview_guide_pdf(
     return bytes(pdf.output())
 
 
+def generate_scope_summary_pdf(project_data: dict) -> bytes:
+    """
+    Build a one-page Project Brief PDF and return it as raw bytes.
+
+    Parameters
+    ----------
+    project_data : dict
+        The project scope dict (from build_project_data).
+
+    Returns
+    -------
+    bytes
+        The PDF file content.
+    """
+    subject = _safe(project_data["subject"]["name"])
+    legacy_type = _safe(project_data["legacy_type"])
+    legacy_desc = _safe(project_data.get("legacy_description", ""))
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    page_w = pdf.w - 20  # usable width (10mm margins each side)
+
+    # ── Accent bar at top ────────────────────────────────────────────
+    pdf.set_fill_color(46, 64, 87)  # #2E4057
+    pdf.rect(0, 0, 210, 6, "F")
+    pdf.set_fill_color(74, 124, 143)  # #4A7C8F
+    pdf.rect(0, 6, 210, 2, "F")
+    pdf.ln(14)
+
+    # ── Title ────────────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 22)
+    pdf.set_text_color(46, 64, 87)
+    pdf.cell(0, 10, "Living Legacy Project Brief", align="C",
+             new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+
+    pdf.set_font("Helvetica", "", 14)
+    pdf.set_text_color(74, 124, 143)
+    pdf.cell(0, 8, _safe(f"{subject}'s {legacy_type}"),
+             align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+
+    # Date generated
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(140, 140, 140)
+    pdf.cell(0, 5, f"Generated {datetime.now().strftime('%B %d, %Y')}",
+             align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(6)
+
+    # Thin divider
+    pdf.set_draw_color(200, 200, 200)
+    pdf.set_line_width(0.3)
+    pdf.line(30, pdf.get_y(), 180, pdf.get_y())
+    pdf.ln(6)
+
+    # ── Helper: section label + value ────────────────────────────────
+    LABEL_COL_W = 45  # mm reserved for the label column
+
+    def _field(label: str, value: str):
+        safe_label = _safe(label)
+        safe_value = _safe(value)
+
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.set_text_color(46, 64, 87)
+        label_w = pdf.get_string_width(safe_label) + 2  # +2 for padding
+
+        if label_w <= LABEL_COL_W:
+            # Label fits in the fixed column → side-by-side layout
+            pdf.cell(LABEL_COL_W, 6, safe_label)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(60, 60, 60)
+            pdf.multi_cell(page_w - LABEL_COL_W, 6, safe_value)
+        else:
+            # Label is too long → stacked layout (label above, value indented)
+            pdf.multi_cell(page_w, 6, safe_label)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(60, 60, 60)
+            pdf.set_x(10 + LABEL_COL_W)  # indent the value
+            pdf.multi_cell(page_w - LABEL_COL_W, 6, safe_value)
+        pdf.ln(2)
+
+    # ── Subject ──────────────────────────────────────────────────────
+    _field("Subject:", subject)
+    relationship = project_data["subject"].get("relationship", "")
+    if relationship:
+        _field("Relationship:", relationship)
+
+    # ── Legacy Type ──────────────────────────────────────────────────
+    _field("Legacy Type:", f"{legacy_type} -- {legacy_desc}")
+
+    # ── Target Audience ──────────────────────────────────────────────
+    audiences = project_data.get("target_audience", [])
+    if audiences:
+        _field("Target Audience:", ", ".join(audiences))
+    audience_notes = project_data.get("audience_notes", "")
+    if audience_notes:
+        _field("Audience Notes:", audience_notes)
+
+    # ── Key Themes / Focus Areas ─────────────────────────────────────
+    # Collect theme selections from scoping_details (multiselect answers)
+    themes = []
+    for _q_text, answer in project_data.get("scoping_details", {}).items():
+        if isinstance(answer, list):
+            themes.extend(answer)
+    if themes:
+        _field("Key Themes:", ", ".join(themes))
+
+    # ── Scoping Highlights (non-list answers) ────────────────────────
+    for q_text, answer in project_data.get("scoping_details", {}).items():
+        if isinstance(answer, str) and answer:
+            _field(f"{q_text}:", answer)
+
+    # ── Delivery Formats ─────────────────────────────────────────────
+    formats = project_data.get("delivery_formats", [])
+    if formats:
+        _field("Delivery Format(s):", ", ".join(formats))
+
+    # ── Timeline ─────────────────────────────────────────────────────
+    timeline = project_data.get("timeline", "")
+    if timeline:
+        _field("Timeline:", timeline)
+
+    # ── Additional Notes ─────────────────────────────────────────────
+    notes = project_data.get("additional_notes", "")
+    if notes:
+        _field("Additional Notes:", notes)
+
+    # ── Footer accent ────────────────────────────────────────────────
+    pdf.ln(4)
+    pdf.set_draw_color(74, 124, 143)
+    pdf.set_line_width(0.3)
+    pdf.line(30, pdf.get_y(), 180, pdf.get_y())
+    pdf.ln(6)
+
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(140, 140, 140)
+    pdf.cell(0, 5, "Living Legacy -- Preserving stories that matter.",
+             align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 5,
+             "Share this brief with family members or stakeholders "
+             "to explain the project scope.",
+             align="C", new_x="LMARGIN", new_y="NEXT")
+
+    return bytes(pdf.output())
+
+
 def _section_heading(pdf: FPDF, title: str):
     """Draw a styled section heading."""
     pdf.set_font("Helvetica", "B", 14)
